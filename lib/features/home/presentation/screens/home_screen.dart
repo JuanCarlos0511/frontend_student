@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
-import 'package:uni_social_student/features/auth_login/logic/login_provider.dart';
-import 'package:uni_social_student/features/auth_login/presentation/screens/login_screen.dart';
 import 'package:uni_social_student/features/feed/presentation/screens/feed_screen.dart';
 import 'package:uni_social_student/features/market/presentation/screens/market_screen.dart';
 import 'package:uni_social_student/features/profile/presentation/screens/profile_screen.dart';
@@ -25,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'Market',
     'Bus',
     'Comunidades',
+    'Chats',
     'Perfil',
   ];
 
@@ -33,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Icons.storefront_rounded,
     Icons.directions_bus_rounded,
     Icons.groups_rounded,
+    Icons.chat_bubble_rounded,
     Icons.person_rounded,
   ];
 
@@ -41,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Icons.storefront_outlined,
     Icons.directions_bus_outlined,
     Icons.groups_outlined,
+    Icons.chat_bubble_outline_rounded,
     Icons.person_outline_rounded,
   ];
 
@@ -50,16 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
     '',
     '',
     '',
+    '',
   ];
-
-  Future<void> _logout() async {
-    await context.read<LoginProvider>().logout();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (_) => false,
-    );
-  }
 
   Widget _buildBody() {
     switch (_currentIndex) {
@@ -72,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const CommunityDiscoverScreen();
       case 4:
+        return const ChatListScreen();
+      case 5:
         return const ProfileScreen();
       default:
         // Placeholder para las otras tabs
@@ -101,35 +95,20 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: [2, 3].contains(_currentIndex)
-          ? null
-          : AppBar(
-              title: Text(_tabLabels[_currentIndex]),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline_rounded),
-                  tooltip: 'Mensajes',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ChatListScreen()),
-                    );
-                  },
-                ),
-                if (_currentIndex != 4) // Don't show logout on profile tab (it has its own)
-                  IconButton(
-                    icon: const Icon(Icons.logout_rounded),
-                    tooltip: 'Cerrar sesión',
-                    onPressed: _logout,
-                  ),
-              ],
-            ),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(0),
+        child: AppBar(
+          backgroundColor: AppTheme.white,
+          elevation: 0,
+        ),
+      ),
       body: _buildBody(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         indicatorColor: AppTheme.primaryRed.withAlpha(30),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide, // Ocultar textos
+        labelBehavior:
+            NavigationDestinationLabelBehavior.alwaysHide, // Ocultar textos
         destinations: List.generate(
           _tabLabels.length,
           (i) => NavigationDestination(

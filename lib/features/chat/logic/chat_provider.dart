@@ -33,11 +33,25 @@ class ChatProvider extends ChangeNotifier {
 
   /// Initialize socket connection.
   Future<void> initSocket() async {
-    if (_socket != null) return;
-
     final prefs = await SharedPreferences.getInstance();
-    _currentStudentId = prefs.getInt('student_id');
+    final studentId = prefs.getInt('student_id');
     final token = prefs.getString('auth_token');
+
+    // Si el usuario cambió, desconectar y limpiar socket anterior
+    if (_currentStudentId != null && _currentStudentId != studentId) {
+      _socket?.disconnect();
+      _socket?.dispose();
+      _socket = null;
+      _rooms.clear();
+      _messages.clear();
+      _activeRoomId = null;
+    }
+    
+    _currentStudentId = studentId;
+
+    if (_socket != null) {
+      if (_socket!.connected) return;
+    }
 
     _socket = sio.io(
       ApiConstants.wsUrl,

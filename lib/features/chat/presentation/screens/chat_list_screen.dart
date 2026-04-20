@@ -28,7 +28,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mensajes')),
+      backgroundColor: AppTheme.white,
       body: Consumer<ChatProvider>(
         builder: (context, provider, _) {
           if (provider.isLoadingRooms && provider.rooms.isEmpty) {
@@ -51,8 +51,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           color: AppTheme.mediumGrey,
                           fontWeight: FontWeight.w600)),
                   SizedBox(height: 4),
-                  Text(
-                      'Contacta a un vendedor desde el Marketplace.',
+                  Text('Contacta a un vendedor desde el Marketplace.',
                       style: TextStyle(color: AppTheme.mediumGrey)),
                 ],
               ),

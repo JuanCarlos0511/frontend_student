@@ -1,4 +1,4 @@
-/// Bus Map Screen — full-screen map with collaborative bus tracking.
+// Bus Map Screen — full-screen map with collaborative bus tracking.
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,36 +18,22 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
 
   // UAT Tampico Center
-  static const _defaultCenter = LatLng(22.2573, -97.8596);
+  static const _defaultCenter = LatLng(22.2770, -97.8670);
 
   // Testing mode
   LatLng? _mockUserLocation;
 
-  // Faculties info
-  static final List<FacultyArea> _faculties = [
-    FacultyArea(
-      name: 'FADYCS',
-      busStop: const LatLng(22.2559, -97.8580),
-      polygon: [
-        const LatLng(22.2565, -97.8588),
-        const LatLng(22.2565, -97.8572),
-        const LatLng(22.2553, -97.8572),
-        const LatLng(22.2553, -97.8588),
-      ],
-      color: Colors.blue.withOpacity(0.3),
-    ),
-    FacultyArea(
-      name: 'FIARN',
-      busStop: const LatLng(22.2580, -97.8610),
-      polygon: [
-        const LatLng(22.2590, -97.8615),
-        const LatLng(22.2590, -97.8600),
-        const LatLng(22.2570, -97.8600),
-        const LatLng(22.2570, -97.8615),
-      ],
-      color: Colors.red.withOpacity(0.3),
-    ),
+  // Bus stops definitions
+  final List<BusStop> _busStops = [
+    BusStop(name: 'FADU', location: const LatLng(22.275061, -97.864159)),
+    BusStop(name: 'Comercio', location: const LatLng(22.275057, -97.862857)),
+    BusStop(name: 'Parada Noroeste', location: const LatLng(22.278268, -97.865288)),
+    BusStop(name: 'Ingeniería', location: const LatLng(22.277076, -97.865416)),
+    BusStop(name: 'Gimnasio', location: const LatLng(22.275938, -97.859497)),
+    BusStop(name: 'Entrada Blvd', location: const LatLng(22.278874, -97.861089)),
+    BusStop(name: 'Derecho', location: const LatLng(22.275606, -97.865422)),
   ];
+
 
   @override
   void initState() {
@@ -112,19 +98,35 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
       reportLocation = LatLng(position.latitude, position.longitude);
     }
 
-    // Check if user is in any faculty
-    for (final faculty in _faculties) {
-      if (faculty.contains(reportLocation)) {
-        reportLocation = faculty.busStop;
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Estás en ${faculty.name}. Se reportará en su parada.'),
-              backgroundColor: AppTheme.successGreen,
-            ),
-          );
+    // Find closest bus stop
+    BusStop? closestStop;
+    double minDistance = double.infinity;
+
+    for (final stop in _busStops) {
+      final distance = const Distance().as(LengthUnit.Meter, reportLocation, stop.location);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestStop = stop;
+      }
+    }
+
+    if (closestStop != null) {
+      reportLocation = closestStop.location;
+      setState(() {
+        for (var s in _busStops) {
+          s.isActive = false;
         }
-        break;
+        closestStop!.isActive = true;
+        closestStop.lastActive = DateTime.now();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Se activó la parada: ${closestStop.name}'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
       }
     }
 
@@ -182,15 +184,47 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.unisocial.student',
                 ),
-                // ── Faculties Perimeters ──
-                PolygonLayer(
-                  polygons: _faculties.map((f) => Polygon(
-                    points: f.polygon,
-                    color: f.color,
-                    borderColor: f.color.withOpacity(1),
-                    borderStrokeWidth: 2,
-                  )).toList(),
+
+                // Static Bus Stops
+                MarkerLayer(
+                  markers: _busStops.map((stop) {
+                    return Marker(
+                      point: stop.location,
+                      width: 60,
+                      height: 60,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (stop.isActive && stop.lastActive != null) {
+                            final diff = DateTime.now().difference(stop.lastActive!);
+                            final msg = diff.inMinutes > 0 
+                                ? "Hace ${diff.inMinutes} min" 
+                                : "Hace unos segundos";
+                            
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text(stop.name),
+                                content: Text("Activo: $msg"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("Cerrar"),
+                                  )
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                        child: Icon(
+                          Icons.directions_bus,
+                          size: stop.isActive ? 40 : 30,
+                          color: stop.isActive ? Colors.red : Colors.grey,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
+
                 // ── Mock User Location (Testing) ──
                 if (_mockUserLocation != null)
                   MarkerLayer(
@@ -393,36 +427,17 @@ class _BusMarkerState extends State<_BusMarker>
   }
 }
 
-class FacultyArea {
+
+class BusStop {
   final String name;
-  final LatLng busStop;
-  final List<LatLng> polygon;
-  final Color color;
+  final LatLng location;
+  bool isActive;
+  DateTime? lastActive;
 
-  FacultyArea({
+  BusStop({
     required this.name,
-    required this.busStop,
-    required this.polygon,
-    required this.color,
+    required this.location,
+    this.isActive = false,
+    this.lastActive,
   });
-
-  bool contains(LatLng point) {
-    int i, j = polygon.length - 1;
-    bool oddNodes = false;
-    for (i = 0; i < polygon.length; i++) {
-      if ((polygon[i].longitude < point.longitude && polygon[j].longitude >= point.longitude ||
-              polygon[j].longitude < point.longitude && polygon[i].longitude >= point.longitude) &&
-          (polygon[i].latitude <= point.latitude || polygon[j].latitude <= point.latitude)) {
-        if (polygon[i].latitude +
-                (point.longitude - polygon[i].longitude) /
-                    (polygon[j].longitude - polygon[i].longitude) *
-                    (polygon[j].latitude - polygon[i].latitude) <
-            point.latitude) {
-          oddNodes = !oddNodes;
-        }
-      }
-      j = i;
-    }
-    return oddNodes;
-  }
 }
