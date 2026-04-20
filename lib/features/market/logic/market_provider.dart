@@ -32,7 +32,7 @@ class MarketProvider extends ChangeNotifier {
   ];
 
   /// Carga los productos del marketplace.
-  Future<void> loadProducts() async {
+  Future<void> loadProducts({int? prioritizeId}) async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
@@ -52,6 +52,14 @@ class MarketProvider extends ChangeNotifier {
           .toList();
     } else {
       _errorMessage = response.message;
+    }
+
+    if (prioritizeId != null) {
+      final idx = _products.indexWhere((p) => p.id == prioritizeId);
+      if (idx > 0) {
+        final p = _products.removeAt(idx);
+        _products.insert(0, p);
+      }
     }
 
     _isLoading = false;

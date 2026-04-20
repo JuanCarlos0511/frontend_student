@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/chat/data/models/chat_models.dart';
+import 'package:uni_social_student/features/home/presentation/screens/home_screen.dart';
 import 'package:uni_social_student/features/chat/logic/chat_provider.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -431,9 +432,16 @@ class _MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (message.referencedProductTitle != null) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                width: MediaQuery.of(context).size.width * 0.75,
+              GestureDetector(
+                onTap: () {
+                  if (message.referencedProductId != null) {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                    HomeScreen.globalKey.currentState?.setTab(1, focusProductId: message.referencedProductId);
+                  }
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  width: MediaQuery.of(context).size.width * 0.75,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -515,6 +523,7 @@ class _MessageBubble extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
               ),
             ],
             Text(

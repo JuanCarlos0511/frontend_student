@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/communities/data/models/community_models.dart';
@@ -173,85 +174,189 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     }
   }
 
-  Future<void> _showCreatePostSheet(BuildContext context) async {
-    final provider = context.read<CommunityProvider>();
+  Future<void> _showCreatePostSheet(BuildContext ctx) async {
+    final provider = ctx.read<CommunityProvider>();
     if (provider.activeCommunity?.isMember != true) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(content: Text('Debes unirte a la comunidad para publicar.'), backgroundColor: AppTheme.errorRed),
       );
       return;
     }
 
-    final contentCtrl = TextEditingController();
-    File? imageFile;
+    final contentController = TextEditingController();
+    String? selectedImagePath; // Ruta del nuevo archivo elegido
+    bool isSubmitting = false;
 
     showModalBottomSheet(
-      context: context,
+      context: ctx,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
         return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Nueva Publicación', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.darkText)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: contentCtrl,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(hintText: '¿Qué quieres compartir con la comunidad?'),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-                          if (picked != null) {
-                            setModalState(() => imageFile = File(picked.path));
-                          }
-                        },
-                        icon: const Icon(Icons.image_outlined),
-                        label: const Text('Adjuntar Imagen'),
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
-                      ),
-                      const SizedBox(width: 12),
-                      if (imageFile != null) const Icon(Icons.check_circle_outline, color: AppTheme.successGreen),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Consumer<CommunityProvider>(
-                    builder: (context, p, _) {
-                      return SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: p.isCreating ? null : () async {
-                            if (contentCtrl.text.trim().isEmpty) return;
-                            final success = await p.createPost(
-                              communityId: widget.communityId,
-                              content: contentCtrl.text.trim(),
-                              imagePath: imageFile?.path,
-                            );
-                            if (success && ctx.mounted) {
-                              Navigator.pop(ctx);
-                            } else if (ctx.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(p.errorMessage), backgroundColor: AppTheme.errorRed)
-                              );
-                            }
-                          },
-                          child: p.isCreating ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: AppTheme.white, strokeWidth: 2)) : const Text('Publicar'),
+          builder: (context, setModalState) {
+            final bool hasNewImage = selectedImagePath != null;
+            final bool showPreview = hasNewImage;
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Header ─────────────────────────────────────────
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Nueva publicación',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.darkText,
+                            ),
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Texto de la publicación ─────────────────────────
+                    TextField(
+                      controller: contentController,
+                      maxLines: 5,
+                      minLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: '¿Qué quieres compartir?',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Vista previa de imagen ──────────────────────────
+                    if (showPreview) ...[
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(selectedImagePath!),
+                              width: double.infinity,
+                              height: 220,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          // Botón quitar imagen
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  selectedImagePath = null;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(160),
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(5),
+                                child: const Icon(Icons.close,
+                                    color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // ── Botón adjuntar / cambiar imagen ────────────────
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.image,
+                          allowMultiple: false,
+                        );
+                        if (result != null && result.files.isNotEmpty) {
+                          setModalState(() {
+                            selectedImagePath = result.files.first.path;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.image_outlined),
+                      label: Text(showPreview ? 'Cambiar imagen' : 'Adjuntar imagen'),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Botón publicar / guardar ────────────────────────
+                    ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              final content = contentController.text.trim();
+                              if (content.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('El contenido no puede estar vacío.'),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => isSubmitting = true);
+
+                              final success = await provider.createPost(
+                                communityId: widget.communityId,
+                                content: content,
+                                imagePath: selectedImagePath,
+                              );
+
+                              if (!context.mounted) return;
+                              setModalState(() => isSubmitting = false);
+
+                              if (success) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                Navigator.pop(context);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Publicación creada.'),
+                                    backgroundColor: AppTheme.successGreen,
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Error al crear publicación.'),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );
+                              }
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 20, 
+                              height: 20, 
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.white)
+                            )
+                          : const Text('Publicar'),
+                    ),
+                  ],
+                ),
               ),
             );
           },

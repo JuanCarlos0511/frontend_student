@@ -1,0 +1,210 @@
+  void _showPostDialog(BuildContext ctx, {PostModel? existingPost}) {
+    final contentController =
+        TextEditingController(text: existingPost?.content ?? '');
+    String? selectedImagePath; // Ruta del nuevo archivo elegido
+    // URL de la imagen existente (para modo edición)
+    String? existingImageUrl = existingPost?.imageUrl;
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: ctx,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final bool hasNewImage = selectedImagePath != null;
+            final bool hasExistingImage =
+                !hasNewImage && existingImageUrl != null;
+            final bool showPreview = hasNewImage || hasExistingImage;
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Header ─────────────────────────────────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            existingPost != null
+                                ? 'Editar publicación'
+                                : 'Nueva publicación',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.darkText,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Texto de la publicación ─────────────────────────
+                    TextField(
+                      controller: contentController,
+                      maxLines: 5,
+                      minLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: '¿Qué quieres compartir?',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Vista previa de imagen ──────────────────────────
+                    if (showPreview) ...[
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: hasNewImage
+                                ? Image.file(
+                                    File(selectedImagePath!),
+                                    width: double.infinity,
+                                    height: 220,
+                                    fit: BoxFit.cover,
+                                  )
+                                : CachedNetworkImage(
+                                    imageUrl: existingImageUrl!,
+                                    width: double.infinity,
+                                    height: 220,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      height: 220,
+                                      color: AppTheme.lightGrey,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      height: 220,
+                                      color: AppTheme.lightGrey,
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image_outlined,
+                                            size: 48, color: AppTheme.mediumGrey),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          // Botón quitar imagen
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  selectedImagePath = null;
+                                  existingImageUrl = null;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(160),
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(5),
+                                child: const Icon(Icons.close,
+                                    color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+
+                    // ── Botón adjuntar / cambiar imagen ────────────────
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await FilePicker.platform.pickFiles(
+                          type: FileType.image,
+                          allowMultiple: false,
+                        );
+                        if (result != null && result.files.isNotEmpty) {
+                          setModalState(() {
+                            selectedImagePath = result.files.first.path;
+                            existingImageUrl = null; // reemplaza la existente
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.image_outlined),
+                      label:
+                          Text(showPreview ? 'Cambiar imagen' : 'Adjuntar imagen'),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Botón publicar / guardar ────────────────────────
+                    ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              final content = contentController.text.trim();
+                              if (content.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'El contenido no puede estar vacío.'),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => isSubmitting = true);
+
+                              final feedProvider =
+                                  context.read<FeedProvider>();
+                              bool success;
+
+                              if (existingPost != null) {
+                                success = await feedProvider.updatePost(
+                                  postId: existingPost.id,
+                                  content: content,
+                                  imagePath: selectedImagePath,
+                                );
+                              } else {
+                                success = await feedProvider.createPost(
+                                  content: content,
+                                  imagePath: selectedImagePath,
+                                );
+                              }
+
+                              setModalState(() => isSubmitting = false);
+
+                              if (!context.mounted) return;
+
+                              if (success) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                Navigator.pop(context);
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(existingPost != null
+                                        ? 'Publicación actualizada.'
+                                        : 'Publicación creada.'),
+                                    backgroundColor: AppTheme.successGreen,
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(feedProvider.message),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );

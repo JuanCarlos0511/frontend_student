@@ -86,7 +86,7 @@ class _AuthGateState extends State<_AuthGate> {
 
         // Si tiene token válido → Home, si no → Login
         if (snapshot.data == true) {
-          return const HomeScreen();
+          return HomeScreen(key: HomeScreen.globalKey);
         }
         return const LoginScreen();
       },

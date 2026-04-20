@@ -11,7 +11,8 @@ import 'package:uni_social_student/features/chat/logic/chat_provider.dart';
 import 'package:uni_social_student/features/chat/presentation/screens/chat_detail_screen.dart';
 
 class MarketScreen extends StatefulWidget {
-  const MarketScreen({super.key});
+  final int? prioritizeProductId;
+  const MarketScreen({super.key, this.prioritizeProductId});
 
   @override
   State<MarketScreen> createState() => _MarketScreenState();
@@ -22,7 +23,7 @@ class _MarketScreenState extends State<MarketScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MarketProvider>().loadProducts();
+      context.read<MarketProvider>().loadProducts(prioritizeId: widget.prioritizeProductId);
     });
   }
 

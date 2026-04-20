@@ -8,15 +8,23 @@ import 'package:uni_social_student/features/communities/presentation/screens/com
 import 'package:uni_social_student/features/chat/presentation/screens/chat_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  static final GlobalKey<HomeScreenState> globalKey = GlobalKey<HomeScreenState>();
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int? _focusProductId;
 
+  void setTab(int index, {int? focusProductId}) {
+    setState(() {
+      _currentIndex = index;
+      _focusProductId = focusProductId;
+    });
+  }
   static const _tabLabels = [
     'Feed',
     'Market',
@@ -58,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return const FeedScreen();
       case 1:
-        return const MarketScreen();
+        return MarketScreen(prioritizeProductId: _focusProductId);
       case 2:
         return const BusScreen();
       case 3:
