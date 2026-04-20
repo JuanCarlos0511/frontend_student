@@ -1,0 +1,428 @@
+/// Bus Map Screen — full-screen map with collaborative bus tracking.
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
+import 'package:uni_social_student/core/theme/app_theme.dart';
+import 'package:uni_social_student/features/bus/logic/bus_provider.dart';
+
+class BusScreen extends StatefulWidget {
+  const BusScreen({super.key});
+
+  @override
+  State<BusScreen> createState() => _BusScreenState();
+}
+
+class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
+  final MapController _mapController = MapController();
+
+  // UAT Tampico Center
+  static const _defaultCenter = LatLng(22.2573, -97.8596);
+
+  // Testing mode
+  LatLng? _mockUserLocation;
+
+  // Faculties info
+  static final List<FacultyArea> _faculties = [
+    FacultyArea(
+      name: 'FADYCS',
+      busStop: const LatLng(22.2559, -97.8580),
+      polygon: [
+        const LatLng(22.2565, -97.8588),
+        const LatLng(22.2565, -97.8572),
+        const LatLng(22.2553, -97.8572),
+        const LatLng(22.2553, -97.8588),
+      ],
+      color: Colors.blue.withOpacity(0.3),
+    ),
+    FacultyArea(
+      name: 'FIARN',
+      busStop: const LatLng(22.2580, -97.8610),
+      polygon: [
+        const LatLng(22.2590, -97.8615),
+        const LatLng(22.2590, -97.8600),
+        const LatLng(22.2570, -97.8600),
+        const LatLng(22.2570, -97.8615),
+      ],
+      color: Colors.red.withOpacity(0.3),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BusProvider>().init();
+    });
+  }
+
+  Future<Position?> _getCurrentPosition() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Activa los servicios de ubicación.'),
+          backgroundColor: AppTheme.errorRed,
+        ),
+      );
+      return null;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (!mounted) return null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permiso de ubicación denegado.'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Permiso de ubicación denegado permanentemente.'),
+          backgroundColor: AppTheme.errorRed,
+        ),
+      );
+      return null;
+    }
+
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
+  Future<void> _reportBus() async {
+    LatLng reportLocation;
+
+    if (_mockUserLocation != null) {
+      reportLocation = _mockUserLocation!;
+    } else {
+      final position = await _getCurrentPosition();
+      if (position == null || !mounted) return;
+      reportLocation = LatLng(position.latitude, position.longitude);
+    }
+
+    // Check if user is in any faculty
+    for (final faculty in _faculties) {
+      if (faculty.contains(reportLocation)) {
+        reportLocation = faculty.busStop;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Estás en ${faculty.name}. Se reportará en su parada.'),
+              backgroundColor: AppTheme.successGreen,
+            ),
+          );
+        }
+        break;
+      }
+    }
+
+    final success = await context.read<BusProvider>().reportBus(
+          reportLocation.latitude,
+          reportLocation.longitude,
+        );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            success ? '¡Bus reportado exitosamente!' : 'Error al reportar.'),
+        backgroundColor: success ? AppTheme.successGreen : AppTheme.errorRed,
+      ),
+    );
+  }
+
+  Future<void> _cancelReport() async {
+    if (!mounted) return;
+    final success = await context.read<BusProvider>().cancelReport();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Reporte cancelado.'
+            : 'No tienes un reporte activo.'),
+        backgroundColor: success ? AppTheme.successGreen : AppTheme.errorRed,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<BusProvider>(
+      builder: (context, provider, _) {
+        return Stack(
+          children: [
+            // ── Map ──
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _defaultCenter,
+                initialZoom: 16.0,
+                onTap: (tapPosition, point) {
+                  setState(() {
+                    _mockUserLocation = point;
+                  });
+                },
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.unisocial.student',
+                ),
+                // ── Faculties Perimeters ──
+                PolygonLayer(
+                  polygons: _faculties.map((f) => Polygon(
+                    points: f.polygon,
+                    color: f.color,
+                    borderColor: f.color.withOpacity(1),
+                    borderStrokeWidth: 2,
+                  )).toList(),
+                ),
+                // ── Mock User Location (Testing) ──
+                if (_mockUserLocation != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _mockUserLocation!,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(
+                          Icons.person_pin_circle,
+                          color: AppTheme.primaryRed,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                // ── Bus markers ──
+                MarkerLayer(
+                  markers: provider.reports.map((report) {
+                    return Marker(
+                      point: LatLng(report.latitude, report.longitude),
+                      width: 50,
+                      height: 50,
+                      child: _BusMarker(report: report),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+
+            // ── Bottom action buttons ──
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 24,
+              child: Row(
+                children: [
+                  // Botón A: "Llegó el bus"
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: provider.isReporting || provider.hasActiveReport
+                          ? null
+                          : _reportBus,
+                      icon: provider.isReporting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppTheme.white))
+                          : const Icon(Icons.directions_bus_rounded),
+                      label: Text(provider.hasActiveReport
+                          ? 'Ya reportaste'
+                          : 'Llegó el bus'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRed,
+                        foregroundColor: AppTheme.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Botón B: "No está el bus"
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: provider.isReporting || !provider.hasActiveReport
+                          ? null
+                          : _cancelReport,
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text('No está el bus'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.mediumGrey,
+                        backgroundColor: AppTheme.white.withAlpha(230),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Report count badge ──
+            Positioned(
+              top: 16,
+              right: 20,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(30),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.directions_bus_rounded,
+                        size: 18, color: AppTheme.primaryRed),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${provider.reports.length} activo${provider.reports.length != 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.darkText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Animated bus marker widget with fade-in effect.
+class _BusMarker extends StatefulWidget {
+  final BusReport report;
+
+  const _BusMarker({required this.report});
+
+  @override
+  State<_BusMarker> createState() => _BusMarkerState();
+}
+
+class _BusMarkerState extends State<_BusMarker>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeIn,
+      child: Tooltip(
+        message:
+            '${widget.report.reporterName}\n${widget.report.remainingSeconds ~/ 60} min restantes',
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.primaryRed,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryRed.withAlpha(80),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.directions_bus_rounded,
+              color: AppTheme.white,
+              size: 28,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FacultyArea {
+  final String name;
+  final LatLng busStop;
+  final List<LatLng> polygon;
+  final Color color;
+
+  FacultyArea({
+    required this.name,
+    required this.busStop,
+    required this.polygon,
+    required this.color,
+  });
+
+  bool contains(LatLng point) {
+    int i, j = polygon.length - 1;
+    bool oddNodes = false;
+    for (i = 0; i < polygon.length; i++) {
+      if ((polygon[i].longitude < point.longitude && polygon[j].longitude >= point.longitude ||
+              polygon[j].longitude < point.longitude && polygon[i].longitude >= point.longitude) &&
+          (polygon[i].latitude <= point.latitude || polygon[j].latitude <= point.latitude)) {
+        if (polygon[i].latitude +
+                (point.longitude - polygon[i].longitude) /
+                    (polygon[j].longitude - polygon[i].longitude) *
+                    (polygon[j].latitude - polygon[i].latitude) <
+            point.latitude) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j = i;
+    }
+    return oddNodes;
+  }
+}

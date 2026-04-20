@@ -1,0 +1,37 @@
+name: uni_social_student
+description: Red Social Privada Universitaria - App del Estudiante
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  dio: ^5.4.3+1
+  file_picker: ^8.0.3
+  provider: ^6.1.2
+  shared_preferences: ^2.3.2
+  google_fonts: ^6.2.1
+  image_picker: ^1.0.7
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  geolocator: 11.1.0
+  cached_network_image: ^3.3.1
+  socket_io_client: ^2.0.3+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+dependency_overrides:
+  flutter_plugin_android_lifecycle: 2.0.22
+  geolocator_android: 4.5.3
+  package_info_plus: 8.0.2
+  image_picker_android: 0.8.10

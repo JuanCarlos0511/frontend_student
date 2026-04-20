@@ -1,0 +1,25 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+    
+    // Inject the flutter extension needed by older plugins in Flutter 3.16+
+    project.ext.set("flutter", [
+        compileSdkVersion: 34,
+        minSdkVersion: 24,
+        targetSdkVersion: 34
+    ])
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
