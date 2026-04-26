@@ -105,3 +105,45 @@ class CommunityMemberModel {
 
   String get fullName => '$firstName $lastName'.trim();
 }
+
+class CommunityFolderModel {
+  final int id;
+  final int communityId;
+  final String name;
+  final int? creatorId;
+
+  CommunityFolderModel({required this.id, required this.communityId, required this.name, this.creatorId});
+
+  factory CommunityFolderModel.fromJson(Map<String, dynamic> json) {
+    return CommunityFolderModel(
+      id: json['id'] ?? 0,
+      communityId: json['community_id'] ?? 0,
+      name: json['name'] ?? '',
+      creatorId: json['creator_id'],
+    );
+  }
+}
+
+class CommunityFileModel {
+  final int id;
+  final int? folderId;
+  final int communityId;
+  final String name;
+  final String url;
+  final int? creatorId;
+
+  CommunityFileModel({
+    required this.id, this.folderId, required this.communityId, required this.name, required this.url, this.creatorId
+  });
+
+  factory CommunityFileModel.fromJson(Map<String, dynamic> json) {
+    return CommunityFileModel(
+      id: json['id'] ?? 0,
+      folderId: json['folder_id'],
+      communityId: json['community_id'] ?? 0,
+      name: json['name'] ?? '',
+      url: json['url'] ?? '',
+      creatorId: json['creator_id'],
+    );
+  }
+}

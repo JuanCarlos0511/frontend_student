@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:uni_social_student/shared/widgets/animated_search_bar.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/communities/data/models/community_models.dart';
 import 'package:uni_social_student/features/communities/logic/community_provider.dart';
@@ -18,6 +20,14 @@ class CommunityDiscoverScreen extends StatefulWidget {
 }
 
 class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -208,6 +218,16 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              AnimatedSearchBar(
+                hintText: 'Buscar comunidades...',
+                onChanged: (val) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    context.read<CommunityProvider>().setSearchQuery(val);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
               // ── Category chips ──
               SizedBox(
                 height: 40,
@@ -287,10 +307,9 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
+          crossAxisCount: 1,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          mainAxisExtent: 230, // Mantener altura aproximada de las tarjetas pero ocupando todo el ancho
         ),
         itemCount: provider.communities.length,
         itemBuilder: (context, index) {
@@ -360,34 +379,41 @@ class _CommunityCard extends StatelessWidget {
             ),
             // ── Info ──
             Expanded(
-              flex: 4,
+              flex: 1,
               child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      community.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.darkText,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            community.name,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.darkText,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${community.membersCount} miembro${community.membersCount == 1 ? '' : 's'}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.mediumGrey,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${community.membersCount} miembro${community.membersCount == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.mediumGrey,
-                      ),
-                    ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.lightGrey,
                         borderRadius: BorderRadius.circular(8),

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:uni_social_student/features/profile/logic/profile_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/auth_login/logic/login_provider.dart';
@@ -316,6 +317,94 @@ class _FeedScreenState extends State<FeedScreen> {
     return 'ahora';
   }
 
+  Widget _buildHeader(BuildContext context) {
+    final loginProvider = context.watch<LoginProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
+    final firstName = loginProvider.studentName?.split(' ').first ?? 'Alex';
+    final photoUrl = profileProvider.profilePhotoUrl;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        // Renglón de bienvenida
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 24,
+                backgroundColor: AppTheme.primaryRed,
+                child: Text('U', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 12),
+              Column(
+
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Noticias del Campus', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.darkText)),
+                  Text('Buenos Días, $firstName', style: TextStyle(fontSize: 14, color: AppTheme.mediumGrey)),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Caja de entrada "Qué está pasando"
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _showCreatePostDialog,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppTheme.lightGrey,
+                        backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
+                        child: photoUrl == null ? const Icon(Icons.person, color: AppTheme.mediumGrey) : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightGrey.withAlpha(100),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            '¿Qué está pasando en el campus?',
+                            style: TextStyle(color: AppTheme.mediumGrey, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.image_outlined, color: AppTheme.primaryRed),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final loginProvider = context.watch<LoginProvider>();
@@ -350,38 +439,40 @@ class _FeedScreenState extends State<FeedScreen> {
             );
           }
 
-          if (feed.posts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.dynamic_feed_outlined,
-                      size: 72,
-                      color: AppTheme.primaryRed.withAlpha(180)),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'No hay publicaciones aún.\n¡Sé el primero en publicar!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.darkText,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
+
 
           return RefreshIndicator(
             onRefresh: _refreshPosts,
             color: AppTheme.primaryRed,
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: feed.posts.length,
+              padding: const EdgeInsets.only(bottom: 80), // extra padding for FAB
+              itemCount: feed.posts.isEmpty ? 2 : feed.posts.length + 1,
               itemBuilder: (context, index) {
-                final post = feed.posts[index];
+                if (index == 0) {
+                  return _buildHeader(context);
+                }
+
+                if (feed.posts.isEmpty) {
+                  return SizedBox(
+                    height: 300,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.dynamic_feed_outlined, size: 72, color: AppTheme.primaryRed.withAlpha(180)),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'No hay publicaciones aún.\n¡Sé el primero en publicar!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.darkText, height: 1.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final post = feed.posts[index - 1];
                 final isOwner = post.studentId == currentStudentId;
 
                 return Card(

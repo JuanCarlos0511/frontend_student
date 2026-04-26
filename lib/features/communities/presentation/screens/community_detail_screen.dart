@@ -111,10 +111,11 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               ),
               if (community.creatorId == context.read<CommunityProvider>().currentStudentId) ...[
                 ListTile(
-                  leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Editar Comunidad'),
+                  leading: const Icon(Icons.admin_panel_settings_outlined),
+                  title: const Text('Ajustes de comunidad (Gestión de Moderadores)'),
                   onTap: () {
                     Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gestión de moderadores próximamente')));
                   },
                 ),
                 ListTile(
@@ -276,6 +277,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                                 child: const Icon(Icons.close,
                                     color: Colors.white, size: 18),
                               ),
+                              
                             ),
                           ),
                         ],
@@ -396,16 +398,17 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                   ),
                 ),
                 actions: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.black.withAlpha(80),
-                      child: IconButton(
-                        icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
-                        onPressed: () => _showMembersOptions(context, c),
+                  if (c.creatorId == context.read<CommunityProvider>().currentStudentId)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.black.withAlpha(80),
+                        child: IconButton(
+                          icon: const Icon(Icons.more_vert, color: Colors.white, size: 20),
+                          onPressed: () => _showMembersOptions(context, c),
+                        ),
                       ),
                     ),
-                  ),
                 ],
                 
                 bottom: PreferredSize(

@@ -10,7 +10,7 @@ class MarketRepository {
   MarketRepository({Dio? dio}) : _dio = dio ?? NetworkClient.instance;
 
   /// Obtiene todos los productos del marketplace.
-  Future<ApiResponse> fetchProducts({String? category, int limit = 50, int offset = 0}) async {
+  Future<ApiResponse> fetchProducts({String? category, String? search, int limit = 50, int offset = 0}) async {
     try {
       final params = <String, dynamic>{
         'limit': limit,

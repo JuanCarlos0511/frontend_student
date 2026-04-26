@@ -14,12 +14,14 @@ class MarketProvider extends ChangeNotifier {
   bool _isCreating = false;
   String _errorMessage = '';
   String? _selectedCategory;
+  String _searchQuery = '';
 
   List<MarketProductModel> get products => _products;
   bool get isLoading => _isLoading;
   bool get isCreating => _isCreating;
   String get errorMessage => _errorMessage;
   String? get selectedCategory => _selectedCategory;
+  String get searchQuery => _searchQuery;
 
   static const List<String> categories = [
     'Todos',
@@ -32,7 +34,7 @@ class MarketProvider extends ChangeNotifier {
   ];
 
   /// Carga los productos del marketplace.
-  Future<void> loadProducts({int? prioritizeId}) async {
+  Future<void> loadProducts({int? prioritizeId, String query = ''}) async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
@@ -42,7 +44,10 @@ class MarketProvider extends ChangeNotifier {
             ? null
             : _selectedCategory;
 
-    final response = await _repository.fetchProducts(category: categoryParam);
+        if (query.isNotEmpty) {
+      _searchQuery = query;
+    }
+    final response = await _repository.fetchProducts(category: categoryParam, search: _searchQuery);
 
     if (response.success && response.data != null) {
       final list = response.data as List;
@@ -64,6 +69,12 @@ class MarketProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Filtra productos por categoría.
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    loadProducts();
   }
 
   /// Filtra productos por categoría.

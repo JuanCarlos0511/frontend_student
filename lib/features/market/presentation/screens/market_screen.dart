@@ -1,6 +1,8 @@
 /// Marketplace screen — displays product listing with category filter.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:uni_social_student/shared/widgets/animated_search_bar.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:uni_social_student/features/market/data/models/market_product_model.dart';
@@ -19,6 +21,14 @@ class MarketScreen extends StatefulWidget {
 }
 
 class _MarketScreenState extends State<MarketScreen> {
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +67,17 @@ class _MarketScreenState extends State<MarketScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              AnimatedSearchBar(
+                hintText: 'Buscar en el marketplace...',
+                onChanged: (val) {
+                  if (_debounce?.isActive ?? false) _debounce!.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    context.read<MarketProvider>().setSearchQuery(val);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
               // ── Category chips ──
               SizedBox(
                 height: 40,

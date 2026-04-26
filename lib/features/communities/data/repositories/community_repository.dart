@@ -9,23 +9,326 @@ class CommunityRepository {
 
   CommunityRepository({Dio? dio}) : _dio = dio ?? NetworkClient.instance;
 
-  Future<ApiResponse> fetchAll({String? category}) async {
+  Future<ApiResponse> fetchAll({String? category, String? search}) async {
     try {
       final params = <String, dynamic>{};
       if (category != null && category.isNotEmpty && category != 'Todas') {
         params['category'] = category;
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+      if (search != null && search.isNotEmpty) {
+        params['search'] = search;
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       final response = await _dio.get(ApiConstants.communities, queryParameters: params);
       return ApiResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> getById(int id) async {
     try {
@@ -34,12 +337,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> create({
     required String name,
@@ -60,12 +543,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error al crear comunidad.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> join(int communityId) async {
     try {
@@ -74,12 +737,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> leave(int communityId) async {
     try {
@@ -88,12 +931,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> deleteCommunity(int communityId) async {
     try {
@@ -102,12 +1125,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   
   Future<ApiResponse> fetchMembers(int communityId) async {
@@ -116,8 +1319,128 @@ class CommunityRepository {
       return ApiResponse.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       return ApiResponse(success: false, message: e.toString());
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> fetchPosts(int communityId) async {
     try {
@@ -126,12 +1449,192 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error de conexión.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
 
   Future<ApiResponse> createPost({
     required int communityId,
@@ -152,10 +1655,250 @@ class CommunityRepository {
     } on DioException catch (e) {
       if (e.response != null && e.response!.data is Map) {
         return ApiResponse.fromJson(e.response!.data as Map<String, dynamic>);
-      }
+      
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
       return ApiResponse(success: false, message: 'Error al crear post.');
     } catch (e) {
       return ApiResponse(success: false, message: 'Error inesperado: $e');
+    
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+  
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+}
+
+  // --- Folders & Files ---
+  Future<ApiResponse> fetchFolders(int communityId) async {
+    try {
+      final response = await _dio.get('/communities/$communityId/folders');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> createFolder(int communityId, String name) async {
+    try {
+      final response = await _dio.post('/communities/$communityId/folders', data: {'name': name});
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFolder(int communityId, int folderId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/folders/$folderId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> fetchFiles(int communityId, {int? folderId}) async {
+    try {
+      final uri = folderId != null ? '/communities/$communityId/files?folderId=$folderId' : '/communities/$communityId/files';
+      final response = await _dio.get(uri);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> uploadFile(int communityId, String filePath, {int? folderId}) async {
+    try {
+      final formData = FormData.fromMap({
+        if (folderId != null) 'folderId': folderId,
+        'communityFile': await MultipartFile.fromFile(filePath),
+      });
+      final response = await _dio.post('/communities/$communityId/files', data: formData);
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
+  }
+
+  Future<ApiResponse> deleteFile(int communityId, int fileId) async {
+    try {
+      final response = await _dio.delete('/communities/$communityId/files/$fileId');
+      return ApiResponse.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
 }
