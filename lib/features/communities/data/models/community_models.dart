@@ -9,6 +9,7 @@ class CommunityModel {
   final String? description;
   final String? creatorName;
   final bool? isMember;
+  final String privacyMode;
   final DateTime createdAt;
 
   CommunityModel({
@@ -21,6 +22,7 @@ class CommunityModel {
     this.description,
     this.creatorName,
     this.isMember,
+    this.privacyMode = 'public',
     required this.createdAt,
   });
 
@@ -35,6 +37,7 @@ class CommunityModel {
       description: json['description'],
       creatorName: json['creator_name'],
       isMember: json['is_member'],
+      privacyMode: json['privacy_mode'] ?? 'public',
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
     );
   }

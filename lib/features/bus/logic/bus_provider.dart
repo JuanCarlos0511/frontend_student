@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_social_student/features/bus/data/repositories/bus_repository.dart';
+import 'package:socket_io_client/socket_io_client.dart' as sio;
+import 'package:uni_social_student/core/network/api_constants.dart';
 
 class BusReport {
   final int id;
@@ -48,6 +50,8 @@ class BusReport {
 }
 
 class BusProvider extends ChangeNotifier {
+  sio.Socket? _socket;
+
   final BusRepository _repository;
 
   BusProvider({BusRepository? repository})
@@ -71,8 +75,37 @@ class BusProvider extends ChangeNotifier {
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _currentStudentId = prefs.getInt('student_id');
+    
+    _socket?.disconnect();
+    _socket?.dispose();
+    
+    _socket = sio.io(
+      ApiConstants.wsUrl,
+      sio.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build(),
+    );
+
+    _socket!.connect();
+    _socket!.onConnect((_) {
+      _socket!.emit('join_bus');
+    });
+
+    _socket!.on('bus_location_changed', (data) {
+      loadReports();
+    });
+
     await loadReports();
     _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _socket?.disconnect();
+    _socket?.dispose();
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   void _startPolling() {
@@ -112,6 +145,7 @@ class BusProvider extends ChangeNotifier {
     _isReporting = false;
 
     if (response.success) {
+      _socket?.emit('bus_update', {'event': 'new_report'});
       await loadReports();
       return true;
     } else {
@@ -130,6 +164,7 @@ class BusProvider extends ChangeNotifier {
     _isReporting = false;
 
     if (response.success) {
+      _socket?.emit('bus_update', {'event': 'cancel_report'});
       await loadReports();
       return true;
     } else {
@@ -139,9 +174,4 @@ class BusProvider extends ChangeNotifier {
     }
   }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/bus/logic/bus_provider.dart';
@@ -15,13 +16,13 @@ class BusScreen extends StatefulWidget {
 }
 
 class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
+  LatLng? _userLocation;
+  StreamSubscription<Position>? _positionStream;
+
   final MapController _mapController = MapController();
 
   // UAT Tampico Center
   static const _defaultCenter = LatLng(22.2770, -97.8670);
-
-  // Testing mode
-  LatLng? _mockUserLocation;
 
   // Bus stops definitions
   final List<BusStop> _busStops = [
@@ -41,6 +42,38 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BusProvider>().init();
     });
+    _startLocationTracking();
+  }
+
+  void _startLocationTracking() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    if (permission == LocationPermission.deniedForever) return;
+
+    final locSettings = const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+    );
+
+    _positionStream = Geolocator.getPositionStream(locationSettings: locSettings).listen((Position? position) {
+      if (position != null && mounted) {
+        setState(() {
+          _userLocation = LatLng(position.latitude, position.longitude);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    super.dispose();
   }
 
   Future<Position?> _getCurrentPosition() async {
@@ -90,13 +123,9 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
   Future<void> _reportBus() async {
     LatLng reportLocation;
 
-    if (_mockUserLocation != null) {
-      reportLocation = _mockUserLocation!;
-    } else {
-      final position = await _getCurrentPosition();
-      if (position == null || !mounted) return;
-      reportLocation = LatLng(position.latitude, position.longitude);
-    }
+    final position = await _getCurrentPosition();
+    if (position == null || !mounted) return;
+    reportLocation = LatLng(position.latitude, position.longitude);
 
     // Find closest bus stop
     BusStop? closestStop;
@@ -110,8 +139,8 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
       }
     }
 
-    if (closestStop != null) {
-      reportLocation = closestStop.location;
+    if (closestStop != null && minDistance <= 20) {
+      // Don't modify reportLocation to ensure the user's actual standing location is used
       setState(() {
         for (var s in _busStops) {
           s.isActive = false;
@@ -128,6 +157,16 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
           ),
         );
       }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Debes estar a 20 metros o menos de una parada oficial.'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+      return;
     }
 
     final success = await context.read<BusProvider>().reportBus(
@@ -172,11 +211,6 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
               options: MapOptions(
                 initialCenter: _defaultCenter,
                 initialZoom: 16.0,
-                onTap: (tapPosition, point) {
-                  setState(() {
-                    _mockUserLocation = point;
-                  });
-                },
               ),
               children: [
                 TileLayer(
@@ -185,17 +219,60 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
                   userAgentPackageName: 'com.unisocial.student',
                 ),
 
+                // Delimitaciones de paradas
+                CircleLayer(
+                  circles: _busStops.map((stop) {
+                    bool isStopActive = stop.isActive;
+                    for (var r in provider.reports) {
+                      final dist = const Distance().as(
+                          LengthUnit.Meter, 
+                          LatLng(r.latitude, r.longitude), 
+                          stop.location
+                      );
+                      if (dist <= 20) {
+                        isStopActive = true;
+                        break;
+                      }
+                    }
+                    return CircleMarker(
+                      point: stop.location,
+                      color: isStopActive ? Colors.red.withAlpha(50) : Colors.blue.withAlpha(30),
+                      borderColor: isStopActive ? Colors.red : Colors.blue.withAlpha(100),
+                      borderStrokeWidth: 2,
+                      useRadiusInMeter: true,
+                      radius: 20, // 20 metros de radio para la zona de parada
+                    );
+                  }).toList(),
+                ),
+
                 // Static Bus Stops
                 MarkerLayer(
                   markers: _busStops.map((stop) {
+                    // Determinar si la parada está activa verificando los reportes
+                    BusReport? activeReport;
+                    for (var r in provider.reports) {
+                      final dist = const Distance().as(
+                          LengthUnit.Meter, 
+                          LatLng(r.latitude, r.longitude), 
+                          stop.location
+                      );
+                      if (dist <= 20) {
+                        activeReport = r;
+                        break;
+                      }
+                    }
+
+                    final bool isStopActive = activeReport != null || stop.isActive;
+                    final DateTime? stopLastActive = activeReport?.createdAt ?? stop.lastActive;
+
                     return Marker(
                       point: stop.location,
                       width: 60,
                       height: 60,
                       child: GestureDetector(
                         onTap: () {
-                          if (stop.isActive && stop.lastActive != null) {
-                            final diff = DateTime.now().difference(stop.lastActive!);
+                          if (isStopActive && stopLastActive != null) {
+                            final diff = DateTime.now().difference(stopLastActive);
                             final msg = diff.inMinutes > 0 
                                 ? "Hace ${diff.inMinutes} min" 
                                 : "Hace unos segundos";
@@ -213,32 +290,40 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                             );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Esta parada no está activa.'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
                           }
                         },
                         child: Icon(
                           Icons.directions_bus,
-                          size: stop.isActive ? 40 : 30,
-                          color: stop.isActive ? Colors.red : Colors.grey,
+                          size: isStopActive ? 40 : 30,
+                          color: isStopActive ? Colors.red : Colors.grey,
                         ),
                       ),
                     );
                   }).toList(),
                 ),
-
-                // ── Mock User Location (Testing) ──
-                if (_mockUserLocation != null)
+                // ── User marker ──
+                if (_userLocation != null)
                   MarkerLayer(
                     markers: [
                       Marker(
-                        point: _mockUserLocation!,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.person_pin_circle,
-                          color: AppTheme.primaryRed,
-                          size: 40,
+                        point: _userLocation!,
+                        width: 20,
+                        height: 20,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
                         ),
-                      ),
+                      )
                     ],
                   ),
                 // ── Bus markers ──

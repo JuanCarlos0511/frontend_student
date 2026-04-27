@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uni_social_student/features/communities/data/models/community_models.dart';
 import 'package:uni_social_student/features/communities/data/repositories/community_repository.dart';
+import 'package:uni_social_student/core/network/network_client.dart';
 
 class CommunityProvider extends ChangeNotifier {
   final CommunityRepository _repository;
@@ -18,6 +19,7 @@ class CommunityProvider extends ChangeNotifier {
   bool _isCreating = false;
   String _errorMessage = '';
   String? _selectedCategory;
+  String _searchQuery = '';
   int? _currentStudentId;
 
   List<CommunityModel> get communities => _communities;
@@ -28,6 +30,7 @@ class CommunityProvider extends ChangeNotifier {
   bool get isCreating => _isCreating;
   String get errorMessage => _errorMessage;
   String? get selectedCategory => _selectedCategory;
+  String get searchQuery => _searchQuery;
   int? get currentStudentId => _currentStudentId;
 
   static const List<String> categories = [
@@ -47,14 +50,21 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   /// Load communities with optional category filter.
-  Future<void> loadCommunities() async {
+  Future<void> loadCommunities({String query = ''}) async {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
 
     await _ensureStudentId();
 
-    final response = await _repository.fetchAll(category: _selectedCategory);
+    if (query.isNotEmpty || _searchQuery.isNotEmpty) {
+      if (query.isNotEmpty) _searchQuery = query;
+    }
+
+    final response = await _repository.fetchAll(
+      category: _selectedCategory, 
+      search: _searchQuery.isNotEmpty ? _searchQuery : null
+    );
 
     if (response.success && response.data != null) {
       final list = response.data as List;
@@ -68,6 +78,12 @@ class CommunityProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Set search query and reload.
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    loadCommunities();
   }
 
   /// Set category filter and reload.
@@ -230,4 +246,120 @@ class CommunityProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // --- Requests & Privacy ---
+  Future<Map<String, dynamic>> updateSettings(int id, String privacyMode, List<String> questions) async {
+    try {
+      final res = await NetworkClient.instance.put('/communities/$id/settings', data: {
+        'privacyMode': privacyMode,
+        'questions': questions
+      });
+      return res.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getSettings(int id) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$id/settings');
+      return res.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getRequests(int id) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$id/requests');
+      return res.data['data'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> respondRequest(int id, int requestId, String action) async {
+    try {
+      await NetworkClient.instance.post('/communities/$id/requests/$requestId/respond', data: {'action': action});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+
+  // --- POSTS INTERACTIONS ---
+  Future<Map<String, dynamic>> getPostDetails(int communityId, int postId) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$communityId/posts/$postId/details');
+      return res.data['data'] ?? {};
+    } catch(e) { return {'likesCount': 0, 'commentsCount': 0, 'isLikedByMe': false}; }
+  }
+
+  Future<bool> toggleLike(int communityId, int postId) async {
+    try {
+      final res = await NetworkClient.instance.post('/communities/$communityId/posts/$postId/like');
+      return res.data['isLiked'] ?? false;
+    } catch(e) { return false; }
+  }
+
+  Future<List<dynamic>> getComments(int communityId, int postId) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$communityId/posts/$postId/comments');
+      return res.data['data'] ?? [];
+    } catch(e) { return []; }
+  }
+
+  Future<bool> addComment(int communityId, int postId, String content) async {
+    try {
+      await NetworkClient.instance.post('/communities/$communityId/posts/$postId/comments', data: {'content': content});
+      return true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> editPost(int communityId, int postId, String content) async {
+    try {
+      await NetworkClient.instance.put('/communities/$communityId/posts/$postId', data: {'content': content});
+      int idx = _posts.indexWhere((p) => p.id == postId);
+      if(idx != -1) {
+        // Can't mutate final model directly, so we reload posts
+        await loadPosts(communityId);
+      }
+      return true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> deletePost(int communityId, int postId) async {
+    try {
+      await NetworkClient.instance.delete('/communities/$communityId/posts/$postId');
+      _posts.removeWhere((p) => p.id == postId);
+      notifyListeners();
+      return true;
+    } catch(e) { return false; }
+  }
+
+
+  Future<List<dynamic>> getQuestions(int id) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$id/questions');
+      return res.data['data'] ?? [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> joinRequest(int id, Map<String, dynamic> answers) async {
+    try {
+      await NetworkClient.instance.post('/communities/$id/join-request', data: {'answers': answers});
+      await fetchMyCommunities(); // Refresh
+      await loadCommunities();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> fetchMyCommunities() async {
+    // Basic alias to refresh
+    await loadCommunities();
+  }
 }
+

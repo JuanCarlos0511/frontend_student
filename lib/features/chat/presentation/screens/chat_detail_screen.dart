@@ -42,7 +42,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   String? _activeReferencedProductTitle;
   String? _activeReferencedProductDescription;
   String? _activeReferencedProductImageUrl;
-  double? _activeReferencedProductPrice;
 
   @override
   void initState() {
@@ -52,7 +51,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _activeReferencedProductTitle = widget.referencedProductTitle;
     _activeReferencedProductDescription = widget.referencedProductDescription;
     _activeReferencedProductImageUrl = widget.referencedProductImageUrl;
-    _activeReferencedProductPrice = widget.referencedProductPrice;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatProvider.loadMessages(widget.roomId);
@@ -86,7 +84,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           _activeReferencedProductTitle = null;
           _activeReferencedProductDescription = null;
           _activeReferencedProductImageUrl = null;
-          _activeReferencedProductPrice = null;
         });
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -165,13 +162,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  const Text(
-                    'En línea',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
                   ),
                 ],
               ),

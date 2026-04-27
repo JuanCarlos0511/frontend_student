@@ -9,11 +9,14 @@ class CommunityRepository {
 
   CommunityRepository({Dio? dio}) : _dio = dio ?? NetworkClient.instance;
 
-  Future<ApiResponse> fetchAll({String? category}) async {
+  Future<ApiResponse> fetchAll({String? category, String? search}) async {
     try {
       final params = <String, dynamic>{};
       if (category != null && category.isNotEmpty && category != 'Todas') {
         params['category'] = category;
+      }
+      if (search != null && search.isNotEmpty) {
+        params['search'] = search;
       }
       final response = await _dio.get(ApiConstants.communities, queryParameters: params);
       return ApiResponse.fromJson(response.data as Map<String, dynamic>);
