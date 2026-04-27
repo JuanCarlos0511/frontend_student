@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/bus/logic/bus_provider.dart';
@@ -16,8 +15,25 @@ class BusScreen extends StatefulWidget {
 }
 
 class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
-  LatLng? _userLocation;
-  StreamSubscription<Position>? _positionStream;
+  final MapController _mapController = MapController();
+
+  // UAT Tampico Center
+  static const _defaultCenter = LatLng(22.2770, -97.8670);
+
+  // Testing mode
+  LatLng? _mockUserLocation;
+
+  // Bus stops definitions
+  final List<BusStop> _busStops = [
+    BusStop(name: 'FADU', location: const LatLng(22.275061, -97.864159)),
+    BusStop(name: 'Comercio', location: const LatLng(22.275057, -97.862857)),
+    BusStop(name: 'Parada Noroeste', location: const LatLng(22.278268, -97.865288)),
+    BusStop(name: 'Ingeniería', location: const LatLng(22.277076, -97.865416)),
+    BusStop(name: 'Gimnasio', location: const LatLng(22.275938, -97.859497)),
+    BusStop(name: 'Entrada Blvd', location: const LatLng(22.278874, -97.861089)),
+    BusStop(name: 'Derecho', location: const LatLng(22.275606, -97.865422)),
+  ];
+
 
   @override
   void initState() {
@@ -25,40 +41,9 @@ class _BusScreenState extends State<BusScreen> with TickerProviderStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BusProvider>().init();
     });
-    _startLocationTracking();
   }
 
-  void _startLocationTracking() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-    if (permission == LocationPermission.deniedForever) return;
-
-    final locSettings = const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 5,
-    );
-
-    _positionStream = Geolocator.getPositionStream(locationSettings: locSettings).listen((Position? position) {
-      if (position != null && mounted) {
-        setState(() {
-          _userLocation = LatLng(position.latitude, position.longitude);
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _positionStream?.cancel();
-    super.dispose();
-  }
-Future<Position?> _getCurrentPosition() async {
+  Future<Position?> _getCurrentPosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (!mounted) return null;
@@ -105,11 +90,15 @@ Future<Position?> _getCurrentPosition() async {
   Future<void> _reportBus() async {
     LatLng reportLocation;
 
-    final position = await _getCurrentPosition();
-    if (position == null || !mounted) return;
-    reportLocation = LatLng(position.latitude, position.longitude);
+    if (_mockUserLocation != null) {
+      reportLocation = _mockUserLocation!;
+    } else {
+      final position = await _getCurrentPosition();
+      if (position == null || !mounted) return;
+      reportLocation = LatLng(position.latitude, position.longitude);
+    }
 
-// Find closest bus stop
+    // Find closest bus stop
     BusStop? closestStop;
     double minDistance = double.infinity;
 
@@ -119,18 +108,6 @@ Future<Position?> _getCurrentPosition() async {
         minDistance = distance;
         closestStop = stop;
       }
-    }
-
-    if (minDistance > 10.0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Debes estar dentro del radio de 10 metros de una parada.'),
-            backgroundColor: AppTheme.errorRed,
-          ),
-        );
-      }
-      return;
     }
 
     if (closestStop != null) {
@@ -195,27 +172,17 @@ Future<Position?> _getCurrentPosition() async {
               options: MapOptions(
                 initialCenter: _defaultCenter,
                 initialZoom: 16.0,
-                
+                onTap: (tapPosition, point) {
+                  setState(() {
+                    _mockUserLocation = point;
+                  });
+                },
               ),
               children: [
                 TileLayer(
                   urlTemplate:
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.unisocial.student',
-                ),
-
-                // Perimeter circles (10m)
-                CircleLayer(
-                  circles: _busStops.map((stop) {
-                    return CircleMarker(
-                      point: stop.location,
-                      color: AppTheme.primaryRed.withAlpha(40),
-                      borderColor: AppTheme.primaryRed,
-                      borderStrokeWidth: 2,
-                      radius: 10,
-                      useRadiusInMeter: true,
-                    );
-                  }).toList(),
                 ),
 
                 // Static Bus Stops
@@ -272,24 +239,6 @@ Future<Position?> _getCurrentPosition() async {
                           size: 40,
                         ),
                       ),
-                    ],
-                  ),
-                // ── User marker ──
-                if (_userLocation != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: _userLocation!,
-                        width: 20,
-                        height: 20,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
-                      )
                     ],
                   ),
                 // ── Bus markers ──
