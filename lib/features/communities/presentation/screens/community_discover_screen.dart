@@ -36,11 +36,15 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
     });
   }
 
+
   void _showCreateDialog() {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String selectedCategory = 'Académicas';
     File? coverFile;
+    bool isCourse = false;
+    List<String> topics = [];
+    final topicCtrl = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -83,7 +87,6 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Image picker area
                     GestureDetector(
                       onTap: () async {
                         final picker = ImagePicker();
@@ -148,6 +151,63 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
                       decoration: const InputDecoration(
                           hintText: 'Descripción (Opcional)'),
                     ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      title: const Text('Modo Curso', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Define una lista de temas de progreso.'),
+                      value: isCourse,
+                      activeColor: AppTheme.primaryRed,
+                      onChanged: (val) => setModalState(() => isCourse = val),
+                    ),
+                    if (isCourse) ...[
+                      const SizedBox(height: 12),
+                      const Text('Temas del Curso', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: topicCtrl,
+                              decoration: const InputDecoration(hintText: 'Nombre del tema'),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: AppTheme.primaryRed),
+                            onPressed: () {
+                              if (topicCtrl.text.trim().isNotEmpty) {
+                                setModalState(() {
+                                  topics.add(topicCtrl.text.trim());
+                                  topicCtrl.clear();
+                                });
+                              }
+                            },
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (topics.isNotEmpty)
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 150),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: topics.length,
+                            itemBuilder: (ctx, i) {
+                              return ListTile(
+                                leading: CircleAvatar(radius: 12, child: Text('${i+1}', style: const TextStyle(fontSize: 12))),
+                                title: Text(topics[i]),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: AppTheme.errorRed, size: 18),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      topics.removeAt(i);
+                                    });
+                                  }
+                                ),
+                              );
+                            }
+                          )
+                        )
+                    ],
                     const SizedBox(height: 24),
                     Consumer<CommunityProvider>(
                       builder: (context, provider, _) {
@@ -171,6 +231,8 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
                                       category: selectedCategory,
                                       description: descCtrl.text.trim(),
                                       coverImagePath: coverFile?.path,
+                                      isCourse: isCourse,
+                                      courseModules: topics,
                                     );
                                     if (success && context.mounted) {
                                       Navigator.pop(ctx);
@@ -204,12 +266,6 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
                 ),
               ),
             );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -116,6 +116,8 @@ class CommunityProvider extends ChangeNotifier {
     required String category,
     String? description,
     String? coverImagePath,
+    bool isCourse = false,
+    List<String> courseModules = const [],
   }) async {
     _isCreating = true;
     notifyListeners();
@@ -125,6 +127,8 @@ class CommunityProvider extends ChangeNotifier {
       category: category,
       description: description,
       coverImagePath: coverImagePath,
+      isCourse: isCourse,
+      courseModules: courseModules,
     );
 
     _isCreating = false;
@@ -334,6 +338,126 @@ class CommunityProvider extends ChangeNotifier {
       _posts.removeWhere((p) => p.id == postId);
       notifyListeners();
       return true;
+    } catch(e) { return false; }
+  }
+
+
+  
+
+  // --- RECURSOS (Folders & Files) ---
+  
+  
+  Future<bool> advanceCourseTopic(int communityId) async {
+    try {
+      final res = await NetworkClient.instance.post('/communities/$communityId/next-topic');
+      if (res.data['success'] == true) {
+        if (_activeCommunity != null && _activeCommunity!.id == communityId) {
+          final updated = res.data['data'];
+          _activeCommunity = CommunityModel.fromJson(updated);
+          notifyListeners();
+        }
+        await loadCommunities();
+        return true;
+      }
+      return false;
+    } catch(e) {
+      return false;
+    }
+  }
+
+  Future<List<dynamic>> getFolders(int communityId) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$communityId/folders');
+      if (res.data['success'] == true) {
+        return res.data['data'] as List<dynamic>;
+      }
+      return [];
+    } catch(e) { return []; }
+  }
+
+  Future<bool> createFolder(int communityId, String name) async {
+    try {
+      final res = await NetworkClient.instance.post('/communities/$communityId/folders', data: {'name': name});
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> updateFolder(int communityId, int folderId, String name) async {
+    try {
+      final res = await NetworkClient.instance.put('/communities/$communityId/folders/$folderId', data: {'name': name});
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> deleteFolder(int communityId, int folderId) async {
+    try {
+      final res = await NetworkClient.instance.delete('/communities/$communityId/folders/$folderId');
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<List<dynamic>> getFiles(int communityId, {int? folderId}) async {
+    try {
+      final url = folderId != null 
+        ? '/communities/$communityId/files?folderId=$folderId'
+        : '/communities/$communityId/files';
+      final res = await NetworkClient.instance.get(url);
+      if (res.data['success'] == true) {
+        return res.data['data'] as List<dynamic>;
+      }
+      return [];
+    } catch(e) { return []; }
+  }
+
+  Future<bool> uploadFile(int communityId, int? folderId, String filePath) async {
+    try {
+      final data = {'folderId': folderId};
+      final res = await NetworkClient.instance.postMultipart(
+        '/communities/$communityId/files',
+        fields: folderId != null ? {'folderId': folderId.toString()} : {},
+        files: {'file': filePath}
+      );
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> updateFile(int communityId, int fileId, String name) async {
+    try {
+      final res = await NetworkClient.instance.put('/communities/$communityId/files/$fileId', data: {'name': name});
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> deleteFile(int communityId, int fileId) async {
+    try {
+      final res = await NetworkClient.instance.delete('/communities/$communityId/files/$fileId');
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+  
+  // --- Asignacion de moderadores ---
+  
+  Future<List<dynamic>> getModerators(int communityId) async {
+    try {
+      final res = await NetworkClient.instance.get('/communities/$communityId/moderators');
+      if (res.data['success'] == true) {
+        return res.data['data'] as List<dynamic>;
+      }
+      return [];
+    } catch(e) { return []; }
+  }
+
+  Future<bool> addModerator(int communityId, int studentId) async {
+    try {
+      final res = await NetworkClient.instance.post('/communities/$communityId/moderators', data: {'studentId': studentId});
+      return res.data['success'] == true;
+    } catch(e) { return false; }
+  }
+
+  Future<bool> removeModerator(int communityId, int studentId) async {
+    try {
+      final res = await NetworkClient.instance.delete('/communities/$communityId/moderators/$studentId');
+      return res.data['success'] == true;
     } catch(e) { return false; }
   }
 

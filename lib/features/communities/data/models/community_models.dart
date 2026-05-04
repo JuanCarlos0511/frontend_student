@@ -10,6 +10,10 @@ class CommunityModel {
   final String? creatorName;
   final bool? isMember;
   final String privacyMode;
+  final bool isCourse;
+  final int currentTopicIndex;
+  final List<String> courseModules;
+
   final DateTime createdAt;
 
   CommunityModel({
@@ -23,6 +27,9 @@ class CommunityModel {
     this.creatorName,
     this.isMember,
     this.privacyMode = 'public',
+    this.isCourse = false,
+    this.currentTopicIndex = 0,
+    this.courseModules = const [],
     required this.createdAt,
   });
 
@@ -38,6 +45,9 @@ class CommunityModel {
       creatorName: json['creator_name'],
       isMember: json['is_member'],
       privacyMode: json['privacy_mode'] ?? 'public',
+      isCourse: json['is_course'] ?? false,
+      currentTopicIndex: json['current_topic_index'] ?? 0,
+      courseModules: (json['course_modules'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
     );
   }

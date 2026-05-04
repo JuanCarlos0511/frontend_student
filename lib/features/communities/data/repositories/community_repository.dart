@@ -49,6 +49,8 @@ class CommunityRepository {
     required String category,
     String? description,
     String? coverImagePath,
+    bool isCourse = false,
+    List<String> courseModules = const [],
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -57,6 +59,8 @@ class CommunityRepository {
         if (description != null && description.isNotEmpty) 'description': description,
         if (coverImagePath != null)
           'communityImage': await MultipartFile.fromFile(coverImagePath),
+        'isCourse': isCourse.toString(),
+        'courseModules': courseModules,
       });
       final response = await _dio.post(ApiConstants.communities, data: formData);
       return ApiResponse.fromJson(response.data as Map<String, dynamic>);

@@ -141,6 +141,18 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     _showRequestsDialog(context, community.id);
                   },
                 ),
+
+                ListTile(
+                  leading: const Icon(Icons.security_outlined),
+                  title: const Text('Administrar Moderadores'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    showDialog(
+                      context: context,
+                      builder: (c) => _ModeratorSettingsDialog(communityId: community.id)
+                    );
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.delete_outline,
                       color: AppTheme.errorRed),
@@ -527,6 +539,40 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: Consumer<CommunityProvider>(
+        builder: (context, provider, _) {
+          final c = provider.activeCommunity;
+          if (c != null && c.isCourse == true && c.creatorId == provider.currentStudentId) {
+            final modules = c.courseModules;
+            final isFinished = c.currentTopicIndex >= (modules.length - 1);
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isFinished ? Colors.grey : AppTheme.primaryRed,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: isFinished ? null : () async {
+                       bool ok = await provider.advanceCourseTopic(c.id);
+                       if (ok && context.mounted) {
+                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Avanzaste al siguiente tema'), backgroundColor: AppTheme.successGreen));
+                       } else if (!ok && context.mounted) {
+                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al avanzar tema'), backgroundColor: AppTheme.errorRed));
+                       }
+                    },
+                    child: Text(isFinished ? 'Curso finalizado' : 'Siguiente tema', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+      ),
       backgroundColor:
           const Color(0xFFF9F9F9), // Light background to match the mockup
       body: Consumer<CommunityProvider>(
@@ -676,12 +722,26 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                                   decoration: BoxDecoration(
                                       color: AppTheme.primaryRed,
                                       borderRadius: BorderRadius.circular(4)),
-                                  child: const Text('COMUNIDAD',
-                                      style: TextStyle(
+                                  child: Text(c.isCourse ? 'CURSO' : 'COMUNIDAD',
+                                      style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold)),
                                 ),
+                                if (c.isCourse && c.courseModules.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                        color: Colors.blueAccent,
+                                        borderRadius: BorderRadius.circular(4)),
+                                    child: Text('Tema actual: ${c.courseModules.length > c.currentTopicIndex ? c.courseModules[c.currentTopicIndex] : "Finalizado"}',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -843,12 +903,11 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                   );
                 })
               else if (_selectedTab == 2)
-                const SliverToBoxAdapter(
-                    child: Center(
-                        child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: Text('No hay recursos disponibles',
-                                style: TextStyle(color: Colors.black54)))))
+                _ResourcesTabSliver(
+                  communityId: widget.communityId,
+                  currentStudentId: provider.currentStudentId,
+                  communityCreatorId: provider.activeCommunity?.creatorId ?? -1,
+                )
               else if (provider.isLoadingPosts)
                 const SliverToBoxAdapter(
                     child: Center(
@@ -1695,3 +1754,292 @@ class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
         ));
   }
 }
+
+class _ModeratorSettingsDialog extends StatefulWidget {
+  final int communityId;
+  const _ModeratorSettingsDialog({required this.communityId});
+
+  @override
+  State<_ModeratorSettingsDialog> createState() => _ModeratorSettingsDialogState();
+}
+
+class _ModeratorSettingsDialogState extends State<_ModeratorSettingsDialog> {
+  bool _isLoading = true;
+  List<dynamic> _moderators = [];
+  List<dynamic> _members = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final prov = context.read<CommunityProvider>();
+    final mods = await prov.getModerators(widget.communityId);
+    
+    // We already have community members locally or need to fetch?
+    // wait, getMembers exists in backend but not in provider? 
+    // actually getCommunityMembers is not standard, so let's just fetch them if missing.
+    // Ah, wait! The user joins, there's getMembers method probably?
+    final res = await NetworkClient.instance.get('/communities/${widget.communityId}/members');
+    final mems = res.data['success'] ? res.data['data'] as List<dynamic> : [];
+
+    if (mounted) {
+      setState(() {
+        _moderators = mods;
+        _members = mems;
+        _isLoading = false;
+      });
+    }
+  }
+
+  bool _isMod(int studentId) {
+    return _moderators.any((m) => m['student_id'] == studentId);
+  }
+
+  Future<void> _toggleMod(int studentId, bool isAlreadyMod) async {
+    final prov = context.read<CommunityProvider>();
+    bool success;
+    if (isAlreadyMod) {
+      success = await prov.removeModerator(widget.communityId, studentId);
+    } else {
+      success = await prov.addModerator(widget.communityId, studentId);
+    }
+    if (success) _loadData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Administrar Moderadores'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 350,
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                itemCount: _members.length,
+                itemBuilder: (ctx, i) {
+                  final m = _members[i];
+                  final sid = m['student_id'] ?? m['id'];
+                  final creatorId = context.read<CommunityProvider>().activeCommunity?.creatorId;
+                  
+                  if (sid == creatorId) return const SizedBox.shrink();
+
+                  final isMod = _isMod(sid);
+                  return ListTile(
+                    title: Text('${m['first_name']} ${m['last_name']}'),
+                    trailing: isMod 
+                        ? IconButton(icon: const Icon(Icons.remove_circle, color: AppTheme.errorRed), onPressed: () => _toggleMod(sid, true))
+                        : IconButton(icon: const Icon(Icons.add_circle, color: AppTheme.successGreen), onPressed: () => _toggleMod(sid, false)),
+                  );
+                }
+              ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar')),
+      ],
+    );
+  }
+}
+
+class _ResourcesTabSliver extends StatefulWidget {
+  final int communityId;
+  final int currentStudentId;
+  final int communityCreatorId;
+
+  const _ResourcesTabSliver({
+    required this.communityId,
+    required this.currentStudentId,
+    required this.communityCreatorId,
+  });
+
+  @override
+  State<_ResourcesTabSliver> createState() => _ResourcesTabSliverState();
+}
+
+class _ResourcesTabSliverState extends State<_ResourcesTabSliver> {
+  bool _isLoading = true;
+  int? _currentFolderId;
+  String? _currentFolderName;
+  
+  List<dynamic> _folders = [];
+  List<dynamic> _files = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadResources();
+  }
+
+  Future<void> _loadResources() async {
+    setState(() => _isLoading = true);
+    final prov = context.read<CommunityProvider>();
+    
+    if (_currentFolderId == null) {
+      _folders = await prov.getFolders(widget.communityId);
+    } else {
+      _folders = [];
+    }
+    
+    _files = await prov.getFiles(widget.communityId, folderId: _currentFolderId);
+    
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  void _createFolder() {
+    final cur = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Crear Carpeta'),
+        content: TextField(controller: cur, decoration: const InputDecoration(hintText: 'Nombre de la carpeta')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              if (cur.text.trim().isNotEmpty) {
+                Navigator.pop(c);
+                await context.read<CommunityProvider>().createFolder(widget.communityId, cur.text.trim());
+                _loadResources();
+              }
+            }, 
+            child: const Text('Crear')
+          ),
+        ],
+      )
+    );
+  }
+
+  void _editFolder(dynamic f) {
+    final cur = TextEditingController(text: f['name']);
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Editar Carpeta'),
+        content: TextField(controller: cur, decoration: const InputDecoration(hintText: 'Nombre')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () async {
+              if (cur.text.trim().isNotEmpty) {
+                Navigator.pop(c);
+                await context.read<CommunityProvider>().updateFolder(widget.communityId, f['id'], cur.text.trim());
+                _loadResources();
+              }
+            }, 
+            child: const Text('Guardar')
+          ),
+        ],
+      )
+    );
+  }
+
+  void _uploadPdf() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() => _isLoading = true);
+      await context.read<CommunityProvider>().uploadFile(widget.communityId, _currentFolderId, result.files.single.path!);
+      _loadResources();
+    }
+  }
+
+  void _deleteFolder(int folderId) async {
+    await context.read<CommunityProvider>().deleteFolder(widget.communityId, folderId);
+    _loadResources();
+  }
+
+  void _deleteFile(int fileId) async {
+    await context.read<CommunityProvider>().deleteFile(widget.communityId, fileId);
+    _loadResources();
+  }
+
+  bool _canEdit(int creatorId) {
+    return creatorId == widget.currentStudentId || widget.communityCreatorId == widget.currentStudentId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())));
+    }
+
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              if (_currentFolderId != null) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    setState(() {
+                      _currentFolderId = null;
+                      _currentFolderName = null;
+                    });
+                    _loadResources();
+                  },
+                ),
+                Expanded(child: Text(_currentFolderName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+              ] else ...[
+                const Expanded(child: Text('Recursos (Raíz)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+              ],
+              if (_currentFolderId == null)
+                IconButton(icon: const Icon(Icons.create_new_folder, color: AppTheme.primaryRed), onPressed: _createFolder, tooltip: 'Nueva Carpeta'),
+              IconButton(icon: const Icon(Icons.upload_file, color: AppTheme.primaryRed), onPressed: _uploadPdf, tooltip: 'Subir PDF'),
+            ],
+          ),
+        ),
+        
+        if (_folders.isEmpty && _files.isEmpty)
+          const Padding(padding: EdgeInsets.all(40), child: Center(child: Text('Aún no hay recursos aquí.', style: TextStyle(color: Colors.black54)))),
+        
+        ..._folders.map((f) => ListTile(
+          leading: const Icon(Icons.folder, color: Colors.blueAccent, size: 40),
+          title: Text(f['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+          trailing: _canEdit(f['creator_id']) ? PopupMenuButton<String>(
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'edit', child: Text('Editar')),
+              const PopupMenuItem(value: 'delete', child: Text('Eliminar', style: TextStyle(color: AppTheme.errorRed))),
+            ],
+            onSelected: (val) {
+              if (val == 'edit') _editFolder(f);
+              if (val == 'delete') _deleteFolder(f['id']);
+            },
+          ) : null,
+          onTap: () {
+            setState(() {
+              _currentFolderId = f['id'];
+              _currentFolderName = f['name'];
+            });
+            _loadResources();
+          },
+        )).toList(),
+        
+        ..._files.map((file) => ListTile(
+          leading: const Icon(Icons.picture_as_pdf, color: AppTheme.primaryRed, size: 40),
+          title: Text(file['name'], maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_canEdit(file['creator_id'])) ...[
+                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteFile(file['id'])),
+              ]
+            ],
+          ),
+          onTap: () {
+            
+          },
+        )).toList(),
+        
+        const SizedBox(height: 60),
+      ]),
+    );
+  }
+}
+
