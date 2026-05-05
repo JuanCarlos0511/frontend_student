@@ -1,6 +1,8 @@
+
 /// Marketplace screen — displays product listing with category filter.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import "package:uni_social_student/features/reports/presentation/screens/report_form_screen.dart";
 import 'dart:async';
 import 'package:uni_social_student/shared/widgets/animated_search_bar.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
@@ -331,9 +333,39 @@ class _ProductCard extends StatelessWidget {
                             value: 'delete',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline, size: 20, color: AppTheme.primaryRed),
+                                Icon(Icons.delete_outline, color: AppTheme.primaryRed, size: 20),
                                 SizedBox(width: 8),
                                 Text('Eliminar', style: TextStyle(color: AppTheme.primaryRed)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.more_vert, color: AppTheme.mediumGrey),
+                        onSelected: (value) {
+                          if (value == 'report') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ReportFormScreen(
+                                  targetId: product.studentId.toString(),
+                                  targetType: 'market',
+                                  targetItemId: product.id,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.report_outlined, size: 20, color: AppTheme.primaryRed),
+                                SizedBox(width: 8),
+                                Text('Reportar', style: TextStyle(color: AppTheme.primaryRed)),
                               ],
                             ),
                           ),

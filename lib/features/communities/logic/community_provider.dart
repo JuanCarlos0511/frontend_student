@@ -1,6 +1,7 @@
 /// State management for communities.
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:uni_social_student/features/communities/data/models/community_models.dart';
 import 'package:uni_social_student/features/communities/data/repositories/community_repository.dart';
 import 'package:uni_social_student/core/network/network_client.dart';
@@ -411,11 +412,13 @@ class CommunityProvider extends ChangeNotifier {
 
   Future<bool> uploadFile(int communityId, int? folderId, String filePath) async {
     try {
-      final data = {'folderId': folderId};
-      final res = await NetworkClient.instance.postMultipart(
+      final formData = dio.FormData.fromMap({
+        if (folderId != null) 'folderId': folderId.toString(),
+        'file': await dio.MultipartFile.fromFile(filePath),
+      });
+      final res = await NetworkClient.instance.post(
         '/communities/$communityId/files',
-        fields: folderId != null ? {'folderId': folderId.toString()} : {},
-        files: {'file': filePath}
+        data: formData
       );
       return res.data['success'] == true;
     } catch(e) { return false; }

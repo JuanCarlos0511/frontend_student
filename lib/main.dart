@@ -1,3 +1,4 @@
+import 'package:uni_social_student/features/reports/presentation/screens/reports_feed_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
@@ -5,6 +6,8 @@ import 'package:uni_social_student/features/auth_login/logic/login_provider.dart
 import 'package:uni_social_student/features/auth_login/presentation/screens/login_screen.dart';
 import 'package:uni_social_student/features/auth_registration/logic/registration_provider.dart';
 import 'package:uni_social_student/features/feed/logic/feed_provider.dart';
+import 'package:uni_social_student/features/reports/logic/reports_provider.dart';
+
 import 'package:uni_social_student/features/home/presentation/screens/home_screen.dart';
 import 'package:uni_social_student/features/market/logic/market_provider.dart';
 import 'package:uni_social_student/features/profile/logic/profile_provider.dart';
@@ -28,6 +31,9 @@ class UniSocialApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginProvider()),
         ChangeNotifierProvider(create: (_) => RegistrationProvider()),
         ChangeNotifierProvider(create: (_) => FeedProvider()),
+        ChangeNotifierProvider(create: (_) => ReportsProvider()),
+        ChangeNotifierProvider(create: (_) => ReportsFeedProvider()),
+
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => BusProvider()),

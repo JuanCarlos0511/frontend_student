@@ -1,6 +1,8 @@
+
 /// Feed screen – shows list of posts with CRUD functionality.
 import 'dart:io';
 import 'package:flutter/material.dart';
+import "package:uni_social_student/features/reports/presentation/screens/report_form_screen.dart";
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/features/profile/logic/profile_provider.dart';
@@ -553,18 +555,43 @@ class _FeedScreenState extends State<FeedScreen> {
                                     value: 'delete',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.delete_outline,
-                                            size: 20,
-                                            color: AppTheme.errorRed),
+                                        Icon(Icons.delete_outline, color: AppTheme.primaryRed, size: 20),
                                         SizedBox(width: 8),
-                                        Text('Eliminar',
-                                            style: TextStyle(
-                                                color: AppTheme.errorRed)),
+                                        Text('Eliminar', style: TextStyle(color: AppTheme.primaryRed)),
                                       ],
                                     ),
                                   ),
                                 ],
-                              ),
+                              )
+                            else
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, color: AppTheme.mediumGrey),
+                                onSelected: (value) {
+                                  if (value == 'report') {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ReportFormScreen(
+                                          targetId: post.studentId.toString(),
+                                          targetType: 'post',
+                                          targetItemId: post.id,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'report',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.report_outlined, size: 20, color: AppTheme.primaryRed),
+                                        SizedBox(width: 8),
+                                        Text('Reportar', style: TextStyle(color: AppTheme.primaryRed)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
                           ],
                         ),
                         const SizedBox(height: 12),

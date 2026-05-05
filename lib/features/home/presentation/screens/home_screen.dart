@@ -1,3 +1,4 @@
+import 'package:uni_social_student/features/reports/presentation/screens/reports_feed_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/feed/presentation/screens/feed_screen.dart';
@@ -32,6 +33,7 @@ class HomeScreenState extends State<HomeScreen> {
     'Comunidades',
     'Chats',
     'Perfil',
+    'Reportes',
   ];
 
   static const _tabIcons = [
@@ -41,6 +43,7 @@ class HomeScreenState extends State<HomeScreen> {
     Icons.groups_rounded,
     Icons.chat_bubble_rounded,
     Icons.person_rounded,
+    Icons.report_rounded,
   ];
 
   static const _tabPlaceholderIcons = [
@@ -50,9 +53,11 @@ class HomeScreenState extends State<HomeScreen> {
     Icons.groups_outlined,
     Icons.chat_bubble_outline_rounded,
     Icons.person_outline_rounded,
+    Icons.report_outlined,
   ];
 
   static const _tabPlaceholderTexts = [
+    '',
     '',
     '',
     '',
@@ -75,6 +80,8 @@ class HomeScreenState extends State<HomeScreen> {
         return const ChatListScreen();
       case 5:
         return const ProfileScreen();
+      case 6:
+        return const ReportsFeedScreen();
       default:
         // Placeholder para las otras tabs
         return Center(

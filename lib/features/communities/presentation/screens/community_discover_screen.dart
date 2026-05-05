@@ -266,6 +266,12 @@ class _CommunityDiscoverScreenState extends State<CommunityDiscoverScreen> {
                 ),
               ),
             );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

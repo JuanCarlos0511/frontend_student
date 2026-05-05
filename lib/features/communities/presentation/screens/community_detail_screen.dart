@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 
+import "package:uni_social_student/core/network/network_client.dart";
 import 'package:provider/provider.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
 import 'package:uni_social_student/features/communities/data/models/community_models.dart';
@@ -905,7 +906,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               else if (_selectedTab == 2)
                 _ResourcesTabSliver(
                   communityId: widget.communityId,
-                  currentStudentId: provider.currentStudentId,
+                  currentStudentId: provider.currentStudentId ?? -1,
                   communityCreatorId: provider.activeCommunity?.creatorId ?? -1,
                 )
               else if (provider.isLoadingPosts)
