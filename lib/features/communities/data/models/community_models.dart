@@ -1,4 +1,6 @@
 /// Model for a community.
+import 'dart:convert';
+
 class CommunityModel {
   final int id;
   final String name;
@@ -34,6 +36,19 @@ class CommunityModel {
   });
 
   factory CommunityModel.fromJson(Map<String, dynamic> json) {
+    List<String> parsedModules = [];
+    if (json['course_modules'] is List) {
+      parsedModules = (json['course_modules'] as List).map((e) => e.toString()).toList();
+    } else if (json['course_modules'] is String) {
+      try {
+        // Just in case it comes as a stringified json
+        final decoded = jsonDecode(json['course_modules']);
+        if (decoded is List) {
+          parsedModules = decoded.map((e) => e.toString()).toList();
+        }
+      } catch (_) {}
+    }
+
     return CommunityModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -47,7 +62,7 @@ class CommunityModel {
       privacyMode: json['privacy_mode'] ?? 'public',
       isCourse: json['is_course'] ?? false,
       currentTopicIndex: json['current_topic_index'] ?? 0,
-      courseModules: (json['course_modules'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      courseModules: parsedModules,
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
     );
   }

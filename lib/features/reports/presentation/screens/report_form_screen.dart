@@ -81,6 +81,7 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _subjectController,
@@ -99,17 +100,19 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(_selectedImagePath != null 
-                    ? 'Imagen: ${_selectedImagePath!.split('/').last}'
-                    : 'Sin evidencia adjuntada'),
-                ),
                 OutlinedButton.icon(
                   onPressed: _pickImage,
                   icon: const Icon(Icons.image),
-                  label: const Text('Adjuntar'),
+                  label: const Text('Adjuntar Evidencia (Opcional)'),
+                ),
+                const SizedBox(height: 8),
+                Text(_selectedImagePath != null 
+                  ? 'Imagen adjuntada: ${_selectedImagePath!.split('/').last}'
+                  : 'Sin evidencia adjuntada',
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
@@ -118,18 +121,15 @@ class _ReportFormScreenState extends State<ReportFormScreen> {
               Image.file(File(_selectedImagePath!), height: 150),
             ],
             const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
-                  padding: const EdgeInsets.symmetric(vertical: 16)
-                ),
-                onPressed: isSubmitting ? null : _submitReport,
-                child: isSubmitting 
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Enviar Reporte', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryRed,
+                padding: const EdgeInsets.symmetric(vertical: 16)
               ),
+              onPressed: isSubmitting ? null : _submitReport,
+              child: isSubmitting 
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text('Enviar Reporte', style: TextStyle(color: Colors.white, fontSize: 16)),
             )
           ],
         ),

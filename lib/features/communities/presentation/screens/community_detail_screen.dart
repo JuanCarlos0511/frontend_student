@@ -439,6 +439,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.black.withAlpha(160),
                                   shape: BoxShape.circle,
+                            
                                 ),
                                 padding: const EdgeInsets.all(5),
                                 child: const Icon(Icons.close,
@@ -470,6 +471,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     ),
 
                     const SizedBox(height: 16),
+
  
                     // ── Botón publicar / guardar ────────────────────────
                     ElevatedButton(

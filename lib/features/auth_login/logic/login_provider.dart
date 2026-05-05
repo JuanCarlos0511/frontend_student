@@ -16,12 +16,15 @@ class LoginProvider extends ChangeNotifier {
   String? _token;
   int? _studentId;
   String? _studentName;
+  String? _role;
 
   AuthStatus get status => _status;
   String get message => _message;
   String? get token => _token;
   int? get studentId => _studentId;
   String? get studentName => _studentName;
+  String? get role => _role;
+  bool get isModerator => _role == 'moderador';
   bool get isLoading => _status == AuthStatus.loading;
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
@@ -33,6 +36,7 @@ class LoginProvider extends ChangeNotifier {
       _token = savedToken;
       _studentId = prefs.getInt('student_id');
       _studentName = prefs.getString('student_name');
+      _role = prefs.getString('student_role');
       _status = AuthStatus.success;
       notifyListeners();
       return true;
@@ -61,6 +65,7 @@ class LoginProvider extends ChangeNotifier {
         _studentId = studentData['id'];
         _studentName =
             '${studentData['firstName']} ${studentData['lastName']}';
+        _role = studentData['role'];
       }
 
       // Persistir en SharedPreferences
@@ -69,6 +74,9 @@ class LoginProvider extends ChangeNotifier {
       if (_studentId != null) await prefs.setInt('student_id', _studentId!);
       if (_studentName != null) {
         await prefs.setString('student_name', _studentName!);
+      }
+      if (_role != null) {
+        await prefs.setString('student_role', _role!);
       }
     } else {
       _status = AuthStatus.error;
@@ -85,11 +93,13 @@ class LoginProvider extends ChangeNotifier {
     _token = null;
     _studentId = null;
     _studentName = null;
+    _role = null;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('student_id');
     await prefs.remove('student_name');
+    await prefs.remove('student_role');
 
     notifyListeners();
   }

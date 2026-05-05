@@ -1,4 +1,5 @@
 /// Data source for community API calls.
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:uni_social_student/core/network/api_constants.dart';
 import 'package:uni_social_student/core/network/network_client.dart';
@@ -60,7 +61,7 @@ class CommunityRepository {
         if (coverImagePath != null)
           'communityImage': await MultipartFile.fromFile(coverImagePath),
         'isCourse': isCourse.toString(),
-        'courseModules': courseModules,
+        'courseModules': jsonEncode(courseModules),
       });
       final response = await _dio.post(ApiConstants.communities, data: formData);
       return ApiResponse.fromJson(response.data as Map<String, dynamic>);

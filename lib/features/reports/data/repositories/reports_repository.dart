@@ -39,7 +39,7 @@ class ReportsRepository {
   Future<List<dynamic>> getReports() async {
     final response = await _dio.get('/reports');
     if (response.statusCode == 200) {
-      return response.data['reports'];
+      return response.data['data'] ?? []; // Fallback to empty list just in case
     }
     throw Exception('Failed to load reports');
   }

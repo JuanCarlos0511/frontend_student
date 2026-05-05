@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'package:uni_social_student/features/auth_login/logic/login_provider.dart';
 import 'package:uni_social_student/features/reports/presentation/screens/reports_feed_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:uni_social_student/core/theme/app_theme.dart';
@@ -26,45 +28,25 @@ class HomeScreenState extends State<HomeScreen> {
       _focusProductId = focusProductId;
     });
   }
-  static const _tabLabels = [
-    'Feed',
-    'Market',
-    'Bus',
-    'Comunidades',
-    'Chats',
-    'Perfil',
-    'Reportes',
-  ];
 
-  static const _tabIcons = [
-    Icons.dynamic_feed_rounded,
-    Icons.storefront_rounded,
-    Icons.directions_bus_rounded,
-    Icons.groups_rounded,
-    Icons.chat_bubble_rounded,
-    Icons.person_rounded,
-    Icons.report_rounded,
-  ];
+  List<String> _getTabLabels(bool isMod) {
+    final list = ['Feed', 'Market', 'Bus', 'Comunidades', 'Chats', 'Perfil'];
+    if (isMod) list.add('Reportes');
+    return list;
+  }
 
-  static const _tabPlaceholderIcons = [
-    Icons.dynamic_feed_outlined,
-    Icons.storefront_outlined,
-    Icons.directions_bus_outlined,
-    Icons.groups_outlined,
-    Icons.chat_bubble_outline_rounded,
-    Icons.person_outline_rounded,
-    Icons.report_outlined,
-  ];
-
-  static const _tabPlaceholderTexts = [
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ];
+  List<IconData> _getTabIcons(bool isMod) {
+    final list = [
+      Icons.dynamic_feed_rounded,
+      Icons.storefront_rounded,
+      Icons.directions_bus_rounded,
+      Icons.groups_rounded,
+      Icons.chat_bubble_rounded,
+      Icons.person_rounded,
+    ];
+    if (isMod) list.add(Icons.report_rounded);
+    return list;
+  }
 
   Widget _buildBody() {
     switch (_currentIndex) {
@@ -83,32 +65,21 @@ class HomeScreenState extends State<HomeScreen> {
       case 6:
         return const ReportsFeedScreen();
       default:
-        // Placeholder para las otras tabs
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(_tabPlaceholderIcons[_currentIndex],
-                  size: 72, color: AppTheme.primaryRed.withAlpha(180)),
-              const SizedBox(height: 20),
-              Text(
-                _tabPlaceholderTexts[_currentIndex],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.darkText,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        );
+        return const SizedBox.shrink();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isMod = context.watch<LoginProvider>().isModerator;
+    final labels = _getTabLabels(isMod);
+    final icons = _getTabIcons(isMod);
+
+    // Safety check for index out of bounds when role changes
+    if (_currentIndex >= labels.length) {
+      _currentIndex = 0;
+    }
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(0),
@@ -125,11 +96,11 @@ class HomeScreenState extends State<HomeScreen> {
         labelBehavior:
             NavigationDestinationLabelBehavior.alwaysHide, // Ocultar textos
         destinations: List.generate(
-          _tabLabels.length,
+          labels.length,
           (i) => NavigationDestination(
-            icon: Icon(_tabIcons[i], color: AppTheme.mediumGrey),
-            selectedIcon: Icon(_tabIcons[i], color: AppTheme.primaryRed),
-            label: _tabLabels[i],
+            icon: Icon(icons[i], color: AppTheme.mediumGrey),
+            selectedIcon: Icon(icons[i], color: AppTheme.primaryRed),
+            label: labels[i],
           ),
         ),
       ),
